@@ -1,3 +1,5 @@
+[English](README-EN.md)
+
 # UWP Pipe
 
 本项目是一个演示 UWP（包括使用 .NET 10 的 UWP）与桌面应用程序进行管道通信的项目。

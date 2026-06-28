@@ -8,6 +8,7 @@
     <File Path=".gitattributes" />
     <File Path=".gitignore" />
     <File Path="LICENSE.txt" />
+    <File Path="README-EN.md" />
     <File Path="README.md" />
   </Folder>
   <Project Path="src/UwpPipe.Common/UwpPipe.Common.csproj" />
