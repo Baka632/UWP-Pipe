@@ -1,0 +1,92 @@
+<Page
+    x:Class="UwpPipe.NativeAot.MainPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:commons="using:UwpPipe.Common"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="using:UwpPipe.NativeAot"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:msgModels="using:UwpPipe.Common.Messages"
+    xmlns:muxc="using:Microsoft.UI.Xaml.Controls"
+    xmlns:viewmodels="using:UwpPipe.NativeAot.ViewModels"
+    d:DataContext="{d:DesignInstance Type=viewmodels:MainViewModel}"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+    mc:Ignorable="d">
+
+    <Grid Padding="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition />
+        </Grid.RowDefinitions>
+
+        <StackPanel
+            Grid.Row="0"
+            Orientation="Horizontal"
+            Spacing="5">
+            <muxc:RadioButtons
+                Header="管道模式"
+                IsEnabled="{x:Bind ViewModel.IsPipeCreated, Mode=OneWay, Converter={StaticResource BoolNegationConverter}}"
+                ItemsSource="{x:Bind ViewModel.PipeModes}"
+                MaxColumns="2"
+                SelectedIndex="0"
+                SelectionChanged="OnPipeModeRadioButtonsSelectionChanged">
+                <muxc:RadioButtons.ItemTemplate>
+                    <DataTemplate x:DataType="commons:PipeMode">
+                        <TextBlock Text="{x:Bind Converter={StaticResource PipeModeConverter}}" />
+                    </DataTemplate>
+                </muxc:RadioButtons.ItemTemplate>
+            </muxc:RadioButtons>
+
+            <Button
+                HorizontalAlignment="Right"
+                VerticalAlignment="Bottom"
+                Command="{x:Bind ViewModel.StartOrStopPipeCommand}"
+                Content="{x:Bind ViewModel.StartOrStopPipeButtonString, Mode=OneWay}" />
+        </StackPanel>
+
+        <muxc:InfoBar
+            Title="{x:Bind ViewModel.InfoBarTitle, Mode=OneWay}"
+            Grid.Row="1"
+            Margin="0,10,0,10"
+            IsClosable="{x:Bind ViewModel.InfoBarClosable, Mode=OneWay}"
+            IsOpen="{x:Bind ViewModel.InfoBarVisible, Mode=OneWay}"
+            Severity="{x:Bind ViewModel.InfoBarSeverity, Mode=OneWay}" />
+
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <TextBox
+                Margin="0,0,5,0"
+                IsEnabled="{x:Bind ViewModel.IsPipeStarted, Mode=OneWay}"
+                PlaceholderText="输入消息......"
+                Text="{x:Bind ViewModel.ToBeSentMessage, Mode=TwoWay}" />
+            <Button
+                Grid.Column="1"
+                Command="{x:Bind ViewModel.SendMessageCommand}"
+                Content="提交"
+                IsEnabled="{x:Bind ViewModel.IsPipeStarted, Mode=OneWay}" />
+        </Grid>
+
+        <ListView
+            Grid.Row="3"
+            Margin="0,10,0,0"
+            ItemsSource="{x:Bind ViewModel.Messages}">
+            <ListView.ItemTemplate>
+                <DataTemplate x:DataType="msgModels:Message">
+                    <Grid>
+                        <TextBlock Text="{x:Bind Content}" Visibility="{x:Bind Type, Converter={StaticResource MessageTypeToVisibilityConverter}}" />
+                        <TextBlock Visibility="{x:Bind Type, Converter={StaticResource MessageTypeToVisibilityConverter}, ConverterParameter=True}">
+                            <Run FontStyle="Italic" Text="已发出：" />
+                            <Run FontStyle="Italic" Text="{x:Bind Content}" />
+                        </TextBlock>
+                    </Grid>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+    </Grid>
+</Page>

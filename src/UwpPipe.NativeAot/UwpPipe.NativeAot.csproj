@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows10.0.26100.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+    <Nullable>enable</Nullable>
+    <UseUwp>true</UseUwp>
+    <Platforms>x86;x64;arm64</Platforms>
+    <RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
+    <DefaultLanguage>zh-CN</DefaultLanguage>
+    <PublishAot>true</PublishAot>
+    <PublishProfile>win-$(Platform).pubxml</PublishProfile>
+    <DisableRuntimeMarshalling>true</DisableRuntimeMarshalling>
+    <EnableMsixTooling>true</EnableMsixTooling>
+    <PackageCertificateThumbprint>70211FC3C97E403131B9A07F4D5F11FB3C59A2A4</PackageCertificateThumbprint>
+    <AppxPackageSigningEnabled>True</AppxPackageSigningEnabled>
+    <ImplicitUsings>true</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageReference Include="CommunityToolkit.Uwp.Converters" Version="8.2.251219" />
+    <PackageReference Include="Microsoft.UI.Xaml" Version="2.8.7" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\UwpPipe.Common\UwpPipe.Common.csproj" />
+  </ItemGroup>
+</Project>

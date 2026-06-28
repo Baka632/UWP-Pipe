@@ -1,0 +1,7 @@
+{
+  "profiles": {
+    "UwpPipe.NativeAot": {
+      "commandName": "MsixPackage"
+    }
+  }
+}

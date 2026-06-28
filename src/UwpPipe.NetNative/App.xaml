@@ -1,0 +1,20 @@
+<Application
+    x:Class="UwpPipe.NetNative.App"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:Microsoft.UI.Xaml.Controls"
+    xmlns:converters="using:UwpPipe.NetNative.Converters"
+    xmlns:local="using:UwpPipe.NetNative"
+    xmlns:wctConverters="using:CommunityToolkit.WinUI.Converters">
+    <Application.Resources>
+        <controls:XamlControlsResources>
+            <controls:XamlControlsResources.MergedDictionaries>
+                <ResourceDictionary>
+                    <converters:PipeModeConverter x:Key="PipeModeConverter" />
+                    <converters:MessageTypeToVisibilityConverter x:Key="MessageTypeToVisibilityConverter" />
+                    <wctConverters:BoolNegationConverter x:Key="BoolNegationConverter" />
+                </ResourceDictionary>
+            </controls:XamlControlsResources.MergedDictionaries>
+        </controls:XamlControlsResources>
+    </Application.Resources>
+</Application>
