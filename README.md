@@ -88,6 +88,12 @@ NamedPipeClientStream stream = new NamedPipeClientStream(".", pipeName, PipeDire
 
 之后便可正常通信。
 
+## 致谢
+
+这些内容为本项目带来了帮助：
+
+- [hannesne/NamedPipesSample](https://github.com/hannesne/NamedPipesSample)
+
 ## 许可
 
 MIT 许可证。
