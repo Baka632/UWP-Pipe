@@ -4,6 +4,12 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
+  <Folder Name="/Solution Files/">
+    <File Path=".gitattributes" />
+    <File Path=".gitignore" />
+    <File Path="LICENSE.txt" />
+    <File Path="README.md" />
+  </Folder>
   <Project Path="src/UwpPipe.Common/UwpPipe.Common.csproj" />
   <Project Path="src/UwpPipe.Desktop/UwpPipe.Desktop.csproj" />
   <Project Path="src/UwpPipe.NativeAot/UwpPipe.NativeAot.csproj">

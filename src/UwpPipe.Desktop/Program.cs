@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.IO.Pipes;
 using System.Security.AccessControl;
 using System.Security.Principal;
@@ -61,7 +62,7 @@ while (true)
                 pipe = new ServerPipe(pipeStream);
                 break;
             case PipeMode.Client:
-                string pipeName = CommonValues.GetPipeNameForPackagedApps(packageSid);
+                string pipeName = GetPipeNameForPackagedApps(packageSid, CommonValues.PipeName);
                 pipe = new ClientPipe(pipeName);
                 break;
             default:
@@ -200,4 +201,10 @@ static (Thread Sender, Thread Receiver, Thread KeepAlive) GetThread(PipeBase pip
 static void OnPipeDisconnected(CancellationTokenSource cts)
 {
     cts.Cancel();
+}
+
+static string GetPipeNameForPackagedApps(string packageSid, string pipeName)
+{
+    int sessionId = Process.GetCurrentProcess().SessionId;
+    return $@"Sessions\{sessionId}\AppContainerNamedObjects\{packageSid}\{pipeName}";
 }
