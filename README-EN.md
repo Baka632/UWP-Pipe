@@ -2,17 +2,19 @@
 
 # UWP Pipe
 
-This project demonstrates pipe communication between UWP (including UWP using .NET 10) and desktop applications.
+This project demonstrates pipe communication between UWP (including UWP using .NET 10) and other processes (including desktop applications and other UWP apps).
 
 ## Screenshots
 
-![Pipe connection between UWP using NativeAOT and desktop application](assets/native-aot.png)
+![Pipe connection between UWP using NativeAOT and a desktop application](assets/native-aot.png)
 
-![Pipe connection between UWP using .NET Native and desktop application](assets/net-native.png)
+![Pipe connection between UWP using .NET Native and a desktop application](assets/net-native.png)
+
+![Pipe connection between two different UWP processes](assets/two-uwp-app-pipe.png)
 
 ## Technical Highlights
 
-### Common Operation: Obtain Packaged App SID (Security Identifier)
+### Common Operation: Obtain the Packaged App’s SID (Security Identifier)
 
 This project obtains the SID via the package family name of the packaged app.
 
@@ -40,37 +42,35 @@ unsafe
 }
 ```
 
-### When UWP Creates the Pipe
+#### Special Notes for .NET Native‑Based UWP Apps
 
-When a UWP program creates a pipe, the name should start with `LOCAL\`, for example:
+.NET Native‑based UWP apps do not include the `SecurityIdentifier` class themselves, so we need to install the `System.Security.Principal.Windows` package.
+
+However, if we reference the latest version 5.0.0 of `System.Security.Principal.Windows`, dependency conflicts will occur, causing the app to crash.
+
+Therefore, we must use version 4.7.0 of `System.Security.Principal.Windows` instead, which works without issues.
+
+### Creating a Pipe
+
+Both desktop applications and UWP applications create pipes in a similar way, using `NamedPipeServerStream`.
+
+However, when a UWP application creates a pipe, the pipe name must start with `LOCAL\`, for example:
 
 ```csharp
 string pipeName = "Baka632-Pipe"; // Pipe name.
 NamedPipeServerStream stream = new NamedPipeServerStream($@"LOCAL\{pipeName}", PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous)
 ```
 
-When a desktop application reads the pipe, it needs to obtain the SID of the UWP process and construct the pipe name as shown below (the pipe name does not need the `LOCAL\` prefix here):
+A pipe created this way can be accessed by desktop applications without permission issues, but other UWP applications cannot access it. Therefore, you need to configure an access control list (ACL) for this pipe.
 
-```csharp
-SecurityIdentifier packageSid; // Previously obtained packaged app SID.
-string pipeName = "Baka632-Pipe"; // Pipe name.
-int sessionId = Process.GetCurrentProcess().SessionId;
-string pipeFullName = $@"Sessions\{sessionId}\AppContainerNamedObjects\{packageSid}\{pipeName}";
-NamedPipeClientStream client = new(".", pipeFullName, PipeDirection.InOut, PipeOptions.Asynchronous);
-```
-
-After that, normal communication can proceed.
-
-### When Desktop Application Creates the Pipe
-
-When a desktop application creates a pipe, it needs to configure the access control list (ACL) to allow the UWP app to access the pipe.
 This can be done via the `NamedPipeServerStreamAcl` class to create a `NamedPipeServerStream` with an ACL.
-When configuring, both the packaged app's SID and the current user's SID must be used to grant access rights.
+
+When configuring, you need to grant access rights using both the packaged app’s SID and the current user’s SID.
 
 ```csharp
 PipeSecurity access = new();
 SecurityIdentifier packageSid; // Previously obtained packaged app SID.
-string pipeName = "Baka632-Pipe"; // Pipe name.
+string pipeName; // Pipe name. If created by UWP, add the "LOCAL\" prefix.
 SecurityIdentifier currentUserSid = WindowsIdentity.GetCurrent().Owner ?? throw new InvalidOperationException("Cannot get the current process SID.");
 
 // Permissions can be configured as needed; this project allows read and write.
@@ -83,14 +83,53 @@ NamedPipeServerStream pipeStream = NamedPipeServerStreamAcl.Create(
     access, HandleInheritability.None);
 ```
 
-The UWP program simply opens the pipe directly; the pipe name does not need the `LOCAL\` prefix.
+#### Special Notes for .NET Native‑Based UWP Apps
+
+Members such as `PipeSecurity`, `PipeAccessRights`, and `NamedPipeServerStreamAcl` are not available in .NET Native UWP apps.
+
+A workaround is to use the `NamedPipeServerStream.NetFrameworkVersion` package, which references the necessary dependencies to resolve most missing members.
+
+However, `NamedPipeServerStreamAcl` is still unavailable; in this case, you can use the `NamedPipeServerStreamConstructors.New` method provided by this package to construct a pipe with an ACL.
+
+Additionally, you should use version 1.0.10 of the `NamedPipeServerStream.NetFrameworkVersion` package, again due to versioning issues with `System.Security.Principal.Windows`.
+
+### Accessing a Pipe
+
+If the pipe is created by a desktop application, both desktop and UWP applications can open the pipe directly (the pipe name does not need the `LOCAL\` prefix).
 
 ```csharp
 string pipeName = "Baka632-Pipe"; // Pipe name.
 NamedPipeClientStream stream = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous)
 ```
 
+If the pipe is created by a UWP application, you need to obtain the SID of that UWP package, and then construct the pipe name as shown below (the pipe name also does not need the `LOCAL\` prefix):
+
+```csharp
+SecurityIdentifier packageSid; // Previously obtained packaged app SID.
+string pipeName = "Baka632-Pipe"; // Pipe name.
+int sessionId = Process.GetCurrentProcess().SessionId;
+string pipeFullName = $@"Sessions\{sessionId}\AppContainerNamedObjects\{packageSid}\{pipeName}";
+NamedPipeClientStream client = new(".", pipeFullName, PipeDirection.InOut, PipeOptions.Asynchronous);
+```
+
 After that, normal communication can proceed.
+
+#### Special Notes for .NET Native‑Based UWP Apps
+
+In .NET Native‑based UWP apps, obtaining the session ID via the `Process.GetCurrentProcess().SessionId` property is not feasible. Although the API exists, calling it will unconditionally throw an exception (the platform does not support it).
+
+We need to P/Invoke the `GetCurrentProcessId` function to get the current process PID, and then call `ProcessIdToSessionId` to obtain the session ID:
+
+```csharp
+public static int? GetCurrentSessionIdNative()
+{
+    uint pid = PInvoke.GetCurrentProcessId();
+
+    return PInvoke.ProcessIdToSessionId(pid, out uint sessionId)
+        ? (int)sessionId
+        : null;
+}
+```
 
 ## Acknowledgements
 
