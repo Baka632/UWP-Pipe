@@ -1,14 +1,17 @@
+using System;
 using System.Collections.ObjectModel;
+using System.IO;
+using System.IO.Pipes;
+using System.Security.AccessControl;
+using System.Security.Principal;
+using System.Threading;
+using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.UI.Xaml.Controls;
 using UwpPipe.Common;
-using UwpPipe.Common.Pipes;
 using UwpPipe.Common.Messages;
-using System.Threading;
-using System.Threading.Tasks;
-using System;
-using System.IO;
+using UwpPipe.Common.Pipes;
 
 namespace UwpPipe.NetNative.ViewModels;
 
@@ -19,8 +22,10 @@ public partial class MainViewModel : ObservableObject
 
     public PipeMode[] PipeModes { get; } = [PipeMode.Client, PipeMode.Server];
     public string StartOrStopPipeButtonString { get => IsPipeCreated ? "停止" : "启动"; }
+    public bool IsConnectToClient { get => SelectedPipeMode == PipeMode.Client; }
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsConnectToClient))]
     private PipeMode selectedPipeMode;
 
     [ObservableProperty]
@@ -48,36 +53,91 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private bool infoBarClosable;
 
+    [ObservableProperty]
+    private bool clientConnectToAnotherUwpServer;
+
+    [ObservableProperty]
+    private string targetUwpServerPackageFamilyName;
+
+    [ObservableProperty]
+    private bool serverAllowAnotherUwpClient;
+
+    [ObservableProperty]
+    private string targetUwpClientPackageFamilyName;
+
     [RelayCommand]
     private async Task StartOrStopPipe()
     {
-        pipeCts.Cancel();
-
         if (IsPipeCreated)
         {
+            pipeCts.Cancel();
             await ClosePipeAsync();
             HideInfoBar();
         }
         else
         {
-            pipeCts = new();
-
             switch (SelectedPipeMode)
             {
                 case PipeMode.Server:
-                    pipe = new ServerPipe($@"LOCAL\{CommonValues.PipeName}");
+                    string serverPipeName = $@"LOCAL\{CommonValues.PipeName}";
+
+                    if (ServerAllowAnotherUwpClient)
+                    {
+                        string sid = CommonValues.TryGetPackageSid(TargetUwpClientPackageFamilyName);
+                        if (string.IsNullOrWhiteSpace(sid))
+                        {
+                            ShowInfoBar("包系列名称无效。", InfoBarSeverity.Error, true);
+                            return;
+                        }
+
+                        PipeSecurity access = new();
+                        SecurityIdentifier appSid = new(sid);
+                        SecurityIdentifier currentUserSid = WindowsIdentity.GetCurrent().Owner ?? throw new InvalidOperationException("不能获取到当前进程的 SID。");
+
+                        PipeAccessRights rights = PipeAccessRights.Read | PipeAccessRights.Write;
+                        access.AddAccessRule(new PipeAccessRule(appSid, rights, AccessControlType.Allow));
+                        access.AddAccessRule(new PipeAccessRule(currentUserSid, rights, AccessControlType.Allow));
+                        NamedPipeServerStream pipeStream = NamedPipeServerStreamConstructors.New(serverPipeName,
+                            PipeDirection.InOut, NamedPipeServerStream.MaxAllowedServerInstances, PipeTransmissionMode.Byte,
+                            PipeOptions.Asynchronous, 512, 512, access, HandleInheritability.None);
+                        pipe = new ServerPipe(pipeStream);
+                    }
+                    else
+                    {
+                        pipe = new ServerPipe(serverPipeName);
+                    }
                     ShowInfoBar("正在等待客户端......", InfoBarSeverity.Informational, false);
                     break;
                 case PipeMode.Client:
-                    pipe = new ClientPipe(CommonValues.PipeName);
+                    string targetPipeName;
+
+                    if (ClientConnectToAnotherUwpServer)
+                    {
+                        string sid = CommonValues.TryGetPackageSid(TargetUwpServerPackageFamilyName);
+                        if (string.IsNullOrWhiteSpace(sid))
+                        {
+                            ShowInfoBar("包系列名称无效。", InfoBarSeverity.Error, true);
+                            return;
+                        }
+
+                        int sessionId = CommonValues.GetCurrentSessionIdNative() ?? throw new InvalidOperationException("无法获取当前进程的 SessionId。");
+                        targetPipeName = CommonValues.GetPipeNameForPackagedApps(sessionId, sid, CommonValues.PipeName);
+                    }
+                    else
+                    {
+                        targetPipeName = CommonValues.PipeName;
+                    }
+
+                    pipe = new ClientPipe(targetPipeName);
                     ShowInfoBar("正在连接......", InfoBarSeverity.Informational, false);
                     break;
                 default:
                     throw new InvalidOperationException("未知的管道模式。");
             }
 
+            pipeCts.Cancel();
+            pipeCts = new();
             IsPipeCreated = true;
-            
 
             Thread receiver = new(async () =>
             {
@@ -104,7 +164,7 @@ public partial class MainViewModel : ObservableObject
                                 await ClosePipeAsync();
                             });
                         }
-                        
+
                         return;
                     }
 
@@ -112,6 +172,7 @@ public partial class MainViewModel : ObservableObject
                     {
                         IsPipeCreated = IsPipeStarted = true;
                         HideInfoBar();
+                        ShowInfoBar("连接成功", InfoBarSeverity.Success, true);
                     });
 
                     Thread keepAlive = new(() =>

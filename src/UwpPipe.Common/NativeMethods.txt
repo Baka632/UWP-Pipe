@@ -1,0 +1,4 @@
+DeriveAppContainerSidFromAppContainerName
+FreeSid
+ProcessIdToSessionId
+GetCurrentProcessId

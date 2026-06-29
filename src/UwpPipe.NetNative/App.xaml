@@ -13,6 +13,7 @@
                     <converters:PipeModeConverter x:Key="PipeModeConverter" />
                     <converters:MessageTypeToVisibilityConverter x:Key="MessageTypeToVisibilityConverter" />
                     <wctConverters:BoolNegationConverter x:Key="BoolNegationConverter" />
+                    <wctConverters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" />
                 </ResourceDictionary>
             </controls:XamlControlsResources.MergedDictionaries>
         </controls:XamlControlsResources>

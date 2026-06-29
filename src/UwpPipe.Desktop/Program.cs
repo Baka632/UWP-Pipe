@@ -30,7 +30,7 @@ while (true)
         {
             Console.WriteLine("请输入目标程序的包系列名称（Family Name）：");
             string? packageFamilyName = Console.ReadLine();
-            packageSid = TryGetPackageSid(packageFamilyName);
+            packageSid = CommonValues.TryGetPackageSid(packageFamilyName);
             if (packageSid == null)
             {
                 Console.WriteLine("名称无效。");
@@ -56,13 +56,14 @@ while (true)
                 access.AddAccessRule(new PipeAccessRule(appSid, rights, AccessControlType.Allow));
                 access.AddAccessRule(new PipeAccessRule(currentUserSid, rights, AccessControlType.Allow));
                 NamedPipeServerStream pipeStream = NamedPipeServerStreamAcl.Create(
-                    CommonValues.PipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Byte,
+                    CommonValues.PipeName, PipeDirection.InOut, NamedPipeServerStream.MaxAllowedServerInstances, PipeTransmissionMode.Byte,
                     PipeOptions.Asynchronous, 512, 512,
                     access, HandleInheritability.None);
                 pipe = new ServerPipe(pipeStream);
                 break;
             case PipeMode.Client:
-                string pipeName = GetPipeNameForPackagedApps(packageSid, CommonValues.PipeName);
+                int sessionId = Process.GetCurrentProcess().SessionId;
+                string pipeName = CommonValues.GetPipeNameForPackagedApps(sessionId, packageSid, CommonValues.PipeName);
                 pipe = new ClientPipe(pipeName);
                 break;
             default:
@@ -110,26 +111,6 @@ while (true)
     }
 
     Console.Clear();
-}
-
-static string? TryGetPackageSid(string? packageFamilyName)
-{
-    if (!string.IsNullOrWhiteSpace(packageFamilyName)
-        && PInvoke.DeriveAppContainerSidFromAppContainerName(packageFamilyName, out PSID psid).Succeeded)
-    {
-        string packageSid;
-        unsafe
-        {
-            SecurityIdentifier appSid = new((nint)psid.Value);
-            packageSid = appSid.ToString();
-            PInvoke.FreeSid(psid);
-        }
-        return packageSid;
-    }
-    else
-    {
-        return null;
-    }
 }
 
 static (Thread Sender, Thread Receiver, Thread KeepAlive) GetThread(PipeBase pipe, PipeMode mode, CancellationTokenSource cts)
@@ -201,10 +182,4 @@ static (Thread Sender, Thread Receiver, Thread KeepAlive) GetThread(PipeBase pip
 static void OnPipeDisconnected(CancellationTokenSource cts)
 {
     cts.Cancel();
-}
-
-static string GetPipeNameForPackagedApps(string packageSid, string pipeName)
-{
-    int sessionId = Process.GetCurrentProcess().SessionId;
-    return $@"Sessions\{sessionId}\AppContainerNamedObjects\{packageSid}\{pipeName}";
 }

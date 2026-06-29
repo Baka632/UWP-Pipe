@@ -11,7 +11,7 @@ public sealed partial class ServerPipe : PipeBase
     public override bool IsConnected => pipeStream.IsConnected;
 
     public ServerPipe(string pipeName)
-        : this(new NamedPipeServerStream(pipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
+        : this(new NamedPipeServerStream(pipeName, PipeDirection.InOut, NamedPipeServerStream.MaxAllowedServerInstances, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
     {
     }
 

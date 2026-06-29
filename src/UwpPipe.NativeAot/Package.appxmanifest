@@ -9,7 +9,7 @@
   <Identity
     Name="Baka632.UwpPipe.NativeAot"
     Publisher="CN=Baka632"
-    Version="1.0.0.0" />
+    Version="1.0.1.0" />
 
   <mp:PhoneIdentity PhoneProductId="a6569582-0266-4e65-9269-3ffc3ee6c201" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 
