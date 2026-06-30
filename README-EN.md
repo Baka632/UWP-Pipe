@@ -112,6 +112,10 @@ string pipeFullName = $@"Sessions\{sessionId}\AppContainerNamedObjects\{packageS
 NamedPipeClientStream client = new(".", pipeFullName, PipeDirection.InOut, PipeOptions.Asynchronous);
 ```
 
+> The SessionId here should theoretically be that of the target UWP process.
+>
+> However, since the server and client generally run under the same session, we use the current process’s SessionId.
+
 After that, normal communication can proceed.
 
 #### Special Notes for .NET Native‑Based UWP Apps

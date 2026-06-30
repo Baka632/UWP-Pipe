@@ -85,7 +85,7 @@ NamedPipeServerStream pipeStream = NamedPipeServerStreamAcl.Create(
 
 #### 针对基于 .NET Native UWP 应用的特殊说明
 
- `PipeSecurity`、`PipeAccessRights`、`NamedPipeServerStreamAcl` 等成员在 .NET Native UWP 应用中不可用。
+`PipeSecurity`、`PipeAccessRights`、`NamedPipeServerStreamAcl` 等成员在 .NET Native UWP 应用中不可用。
 
 一个替代品是使用 `NamedPipeServerStream.NetFrameworkVersion` 包，其会帮我们引用必要的包来解决大部分成员缺失的问题。
 
@@ -111,6 +111,10 @@ int sessionId = Process.GetCurrentProcess().SessionId;
 string pipeFullName = $@"Sessions\{sessionId}\AppContainerNamedObjects\{packageSid}\{pipeName}";
 NamedPipeClientStream client = new(".", pipeFullName, PipeDirection.InOut, PipeOptions.Asynchronous);
 ```
+
+> 这里的 SessionId 理论上应该是目标 UWP 进程的 SessionId。
+>
+> 不过由于服务端和客户端一般运行在同一 Session 下，因此我们这里就用当前进程的 SessionId 了。
 
 之后便可正常通信。
 
